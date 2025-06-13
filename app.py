@@ -21,22 +21,44 @@ def extract_text_from_pdf(uploaded_file):
 # Use ChatGPT to refine resume
 def tailor_resume(resume_text, job_description):
     prompt = f"""
-You are an expert resume writer. Based on the job description below, tailor the resume content to better fit the role.
+You are an expert resume writer. Rewrite the resume professionally, keeping in mind the expectations of top Indian and global recruiters.
 
-Job Description:
-{job_description}
+Create a **one-page, ATS-friendly resume** tailored for roles in **Supply Chain and Production Planning**. Focus on showcasing impactful achievements using **quantified metrics** and **strong action verbs**. Ensure the content is concise, well-structured, and highly relevant to the role.
+
+Format must be **clean, modern, and readable**, with **clear section headings** and **bullet points**.
+
+Highlight skills including:
+- SAP (PP/MM)
+- Excel automation
+- MRP
+- MIS reporting
+- Inventory control
+- Lean manufacturing
+- Other relevant supply chain tools and practices
+
+Also include:
+- Any **significant projects**
+- **Education**
+- **Recognitions or achievements** that demonstrate value
+
+Optimize the resume for companies like **Adani, Tata, ITC, Flipkart, HUL**, and similar MNCs or startups.
+
+The final output should be a **polished one-page resume**, **suitable for online applications and recruiter reviews**. Respond with the **improved resume only** — do **not** include explanations or notes.
 
 Resume:
 {resume_text}
 
-Respond with an improved version of the resume only. Do not include explanations.
+Job Description:
+{job_description}
 """
+
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7
     )
     return response.choices[0].message.content
+
 
 # Create PDF (default font)
 import unicodedata
