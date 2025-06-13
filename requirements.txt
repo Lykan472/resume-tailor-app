@@ -18,3 +18,4 @@ openai
 PyPDF2
 weasyprint
 unicodedata2
+xhtml2pdf
