@@ -140,7 +140,7 @@ if submitted:
             with open(pdf_path, "rb") as f:
                 st.success("Done! Download your tailored resume below.")
                 st.download_button(
-                    label="\ud83d\udcc5 Download Tailored Resume (PDF)",
+                    label="Download Tailored Resume (PDF)",
                     data=f,
                     file_name="tailored_resume.pdf",
                     mime="application/pdf"
