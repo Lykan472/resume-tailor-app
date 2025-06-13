@@ -97,7 +97,6 @@ def convert_text_to_html(text):
 
 def generate_pdf(text):
     html_content = convert_text_to_html(text)
-
     full_html = f"""
     <html>
     <head>
@@ -185,7 +184,14 @@ def generate_pdf(text):
       </style>
     </head>
     <body>
-        {html_content}
+
+      <div class="header">
+        <div class="name">Your Full Name</div>
+        <div class="contact">Email • Phone • LinkedIn • City, Country</div>
+      </div>
+
+      {html_content}
+
     </body>
     </html>
     """
@@ -194,6 +200,7 @@ def generate_pdf(text):
     with open(temp_file.name, "wb") as f:
         pisa.CreatePDF(full_html, dest=f)
     return temp_file.name
+
 
 
 
