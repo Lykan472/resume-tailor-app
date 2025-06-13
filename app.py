@@ -39,23 +39,29 @@ Respond with an improved version of the resume only. Do not include explanations
     return response.choices[0].message.content
 
 # Create PDF (default font)
+import unicodedata
+
+def clean_text_for_pdf(text):
+    # Normalize and replace special characters with ASCII equivalents or remove them
+    normalized = unicodedata.normalize("NFKD", text)
+    ascii_text = normalized.encode("latin-1", errors="ignore").decode("latin-1")
+    return ascii_text
+
 def generate_pdf(text):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.set_font("Arial", size=12)
 
-    for line in text.split("\n"):
-        try:
-            pdf.multi_cell(0, 10, line)
-        except UnicodeEncodeError:
-            # Remove unsupported characters
-            clean_line = line.encode("latin-1", errors="ignore").decode("latin-1")
-            pdf.multi_cell(0, 10, clean_line)
+    cleaned_text = clean_text_for_pdf(text)
+
+    for line in cleaned_text.split("\n"):
+        pdf.multi_cell(0, 10, line)
 
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     pdf.output(temp_file.name)
     return temp_file.name
+
 
 # Streamlit UI
 st.title("🎯 Resume Tailor (ChatGPT-Powered)")
