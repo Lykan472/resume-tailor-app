@@ -120,7 +120,7 @@ def generate_pdf(text):
 
 
 # Streamlit UI
-st.title("\ud83c\udfaf Resume Tailor (ChatGPT-Powered)")
+st.title("Resume Tailor (ChatGPT-Powered)")
 
 with st.form("resume_form"):
     resume_file = st.file_uploader("Upload your Resume (PDF)", type=["pdf"])
