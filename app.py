@@ -3,7 +3,7 @@ from openai import OpenAI
 import os
 from PyPDF2 import PdfReader
 import tempfile
-from weasyprint import HTML
+from xhtml2pdf import pisa
 
 # Set up OpenAI client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -81,37 +81,12 @@ def convert_text_to_html(text):
 def generate_pdf(text):
     html_content = convert_text_to_html(text)
     full_html = f"""
-    <!DOCTYPE html>
     <html>
     <head>
-        <meta charset=\"UTF-8\">
         <style>
-            body {{
-                font-family: 'Arial', sans-serif;
-                margin: 2cm;
-                font-size: 11pt;
-                color: #222;
-            }}
-            h1 {{
-                font-size: 18pt;
-                margin-bottom: 0;
-                color: #2a2a2a;
-            }}
-            h2 {{
-                font-size: 14pt;
-                margin-top: 20px;
-                border-bottom: 1px solid #ccc;
-                color: #333;
-            }}
-            ul {{
-                padding-left: 20px;
-            }}
-            li {{
-                margin-bottom: 4px;
-            }}
-            p {{
-                margin: 0 0 6px 0;
-            }}
+            body {{ font-family: Arial; font-size: 12pt; margin: 2cm; }}
+            h2 {{ border-bottom: 1px solid #ccc; margin-top: 20px; }}
+            li {{ margin-bottom: 4px; }}
         </style>
     </head>
     <body>
@@ -119,9 +94,11 @@ def generate_pdf(text):
     </body>
     </html>
     """
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    HTML(string=full_html).write_pdf(temp_file.name)
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=\".pdf\")
+    with open(temp_file.name, \"wb\") as f:
+        pisa.CreatePDF(full_html, dest=f)
     return temp_file.name
+
 
 # Streamlit UI
 st.title("\ud83c\udfaf Resume Tailor (ChatGPT-Powered)")
