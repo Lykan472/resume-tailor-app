@@ -13,3 +13,8 @@ streamlit
 openai
 PyPDF2
 fpdf
+streamlit
+openai
+PyPDF2
+weasyprint
+unicodedata2
