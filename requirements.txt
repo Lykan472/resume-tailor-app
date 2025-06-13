@@ -4,3 +4,8 @@ fpdf
 python-docx
 pdfminer.six
 openai>=1.0.0
+streamlit
+openai>=1.0.0
+PyPDF2
+fpdf
+python-docx
