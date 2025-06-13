@@ -78,6 +78,23 @@ def convert_text_to_html(text):
 
 # Generate PDF from HTML using WeasyPrint
 
+from xhtml2pdf import pisa
+
+def convert_text_to_html(text):
+    lines = text.split("\n")
+    html = ""
+    for line in lines:
+        line = line.strip()
+        if not line:
+            html += "<br>"
+        elif line.endswith(":"):
+            html += f"<h2>{line}</h2>"
+        elif line.startswith("-"):
+            html += f"<li>{line[1:].strip()}</li>"
+        else:
+            html += f"<p>{line}</p>"
+    return html
+
 def generate_pdf(text):
     html_content = convert_text_to_html(text)
     full_html = f"""
@@ -86,7 +103,8 @@ def generate_pdf(text):
         <style>
             body {{ font-family: Arial; font-size: 12pt; margin: 2cm; }}
             h2 {{ border-bottom: 1px solid #ccc; margin-top: 20px; }}
-            li {{ margin-bottom: 4px; }}
+            li {{ margin-bottom: 6px; margin-left: 15px; }}
+            p {{ margin-bottom: 6px; }}
         </style>
     </head>
     <body>
@@ -94,10 +112,11 @@ def generate_pdf(text):
     </body>
     </html>
     """
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=\".pdf\")
-    with open(temp_file.name, \"wb\") as f:
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    with open(temp_file.name, "wb") as f:
         pisa.CreatePDF(full_html, dest=f)
     return temp_file.name
+
 
 
 # Streamlit UI
