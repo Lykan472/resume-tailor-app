@@ -2,9 +2,8 @@ import streamlit as st
 from openai import OpenAI
 import os
 from PyPDF2 import PdfReader
-from fpdf import FPDF
 import tempfile
-import unicodedata
+from weasyprint import HTML
 
 # Set up OpenAI client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -60,48 +59,72 @@ Job Description:
     )
     return response.choices[0].message.content
 
-# Normalize unicode text for PDF
-def clean_text_for_pdf(text):
-    normalized = unicodedata.normalize("NFKD", text)
-    ascii_text = normalized.encode("latin-1", errors="ignore").decode("latin-1")
-    return ascii_text
+# Convert resume text to HTML
 
-# Improved PDF formatting
-class PDF(FPDF):
-    def __init__(self):
-        super().__init__()
-        self.set_auto_page_break(auto=True, margin=10)
-        self.add_page()
-        self.set_font("Arial", size=11)
-        self.set_margins(15, 15, 15)
+def convert_text_to_html(text):
+    lines = text.strip().split('\n')
+    html = ""
+    for line in lines:
+        line = line.strip()
+        if not line:
+            html += "<br>"
+        elif line.endswith(":"):
+            html += f"<h2>{line[:-1]}</h2>"
+        elif line.startswith("-"):
+            html += f"<li>{line[1:].strip()}</li>"
+        else:
+            html += f"<p>{line}</p>"
+    return f"<ul>{html}</ul>"
 
-    def add_resume_content(self, text):
-        lines = text.split('\n')
-        for line in lines:
-            line = line.strip()
-            if not line:
-                self.ln(5)  # Add vertical space between sections
-                continue
-            if line.endswith(":"):  # Treat as section heading
-                self.set_font("Arial", "B", 12)
-                self.cell(0, 8, line, ln=True)
-                self.set_font("Arial", "", 11)
-            elif line.startswith("-"):
-                self.cell(5)
-                self.multi_cell(0, 6, f"{line}")
-            else:
-                self.multi_cell(0, 6, line)
+# Generate PDF from HTML using WeasyPrint
 
 def generate_pdf(text):
-    cleaned_text = clean_text_for_pdf(text)
-    pdf = PDF()
-    pdf.add_resume_content(cleaned_text)
+    html_content = convert_text_to_html(text)
+    full_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset=\"UTF-8\">
+        <style>
+            body {{
+                font-family: 'Arial', sans-serif;
+                margin: 2cm;
+                font-size: 11pt;
+                color: #222;
+            }}
+            h1 {{
+                font-size: 18pt;
+                margin-bottom: 0;
+                color: #2a2a2a;
+            }}
+            h2 {{
+                font-size: 14pt;
+                margin-top: 20px;
+                border-bottom: 1px solid #ccc;
+                color: #333;
+            }}
+            ul {{
+                padding-left: 20px;
+            }}
+            li {{
+                margin-bottom: 4px;
+            }}
+            p {{
+                margin: 0 0 6px 0;
+            }}
+        </style>
+    </head>
+    <body>
+        {html_content}
+    </body>
+    </html>
+    """
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    pdf.output(temp_file.name)
+    HTML(string=full_html).write_pdf(temp_file.name)
     return temp_file.name
 
 # Streamlit UI
-st.title("🎯 Resume Tailor (ChatGPT-Powered)")
+st.title("\ud83c\udfaf Resume Tailor (ChatGPT-Powered)")
 
 with st.form("resume_form"):
     resume_file = st.file_uploader("Upload your Resume (PDF)", type=["pdf"])
@@ -121,7 +144,7 @@ if submitted:
             with open(pdf_path, "rb") as f:
                 st.success("Done! Download your tailored resume below.")
                 st.download_button(
-                    label="📥 Download Tailored Resume (PDF)",
+                    label="\ud83d\udcc5 Download Tailored Resume (PDF)",
                     data=f,
                     file_name="tailored_resume.pdf",
                     mime="application/pdf"
