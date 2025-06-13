@@ -1,91 +1,87 @@
 import streamlit as st
 from openai import OpenAI
 import os
-import tempfile
 from PyPDF2 import PdfReader
 from fpdf import FPDF
+import tempfile
 
-# Load OpenAI client using Streamlit secrets
+# Set up OpenAI client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# Set GPT model
-MODEL = "gpt-3.5-turbo"
-
-# Function to extract text from uploaded PDF
+# Extract text from uploaded resume
 def extract_text_from_pdf(uploaded_file):
     reader = PdfReader(uploaded_file)
     text = ""
     for page in reader.pages:
-        text += page.extract_text()
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text
     return text
 
-# Function to call ChatGPT and improve the resume
-def chatgpt_refine_resume(resume_text, job_description):
+# Use ChatGPT to refine resume
+def tailor_resume(resume_text, job_description):
     prompt = f"""
-    I am applying for the following job:
-    {job_description}
+You are an expert resume writer. Based on the job description below, tailor the resume content to better fit the role.
 
-    My current resume is:
-    {resume_text}
+Job Description:
+{job_description}
 
-    Please rewrite my resume tailored to this job role. Make it ATS-friendly, impactful, and optimized for the job description.
-    Output the full updated resume in plain text format.
-    """
+Resume:
+{resume_text}
 
+Respond with an improved version of the resume only. Do not include explanations.
+"""
     response = client.chat.completions.create(
-        model=MODEL,
+        model="gpt-3.5-turbo",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7
     )
-    return response.choices[0].message.content.strip()
+    return response.choices[0].message.content
 
-# Function to create PDF from text
-def generate_pdf_from_text(text, filename):
+# Create PDF (default font)
+def generate_pdf(text):
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", size=10)
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
 
-    for line in text.split('\n'):
-        pdf.multi_cell(0, 10, line)
+    for line in text.split("\n"):
+        try:
+            pdf.multi_cell(0, 10, line)
+        except UnicodeEncodeError:
+            # Remove unsupported characters
+            clean_line = line.encode("latin-1", errors="ignore").decode("latin-1")
+            pdf.multi_cell(0, 10, clean_line)
 
-    temp_path = os.path.join(tempfile.gettempdir(), filename)
-    pdf.output(temp_path)
-    return temp_path
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    pdf.output(temp_file.name)
+    return temp_file.name
 
-# --- Streamlit App ---
-st.set_page_config(page_title="Resume Tailor", page_icon="📝")
+# Streamlit UI
+st.title("🎯 Resume Tailor (ChatGPT-Powered)")
 
-st.title("🧠 Resume Tailor using ChatGPT")
-st.write("Upload your **resume** and a **job description**, and get a **customized, ATS-friendly resume** back!")
+with st.form("resume_form"):
+    resume_file = st.file_uploader("Upload your Resume (PDF)", type=["pdf"])
+    job_description = st.text_area("Paste the Job Description here", height=250)
+    submitted = st.form_submit_button("Generate Tailored Resume")
 
-resume_file = st.file_uploader("📄 Upload your resume (PDF)", type=["pdf"])
-job_file = st.file_uploader("📝 Upload job description (PDF or TXT)", type=["pdf", "txt"])
+if submitted:
+    if not resume_file or not job_description.strip():
+        st.error("Please upload your resume and enter a job description.")
+    else:
+        try:
+            with st.spinner("Tailoring your resume..."):
+                resume_text = extract_text_from_pdf(resume_file)
+                improved_resume = tailor_resume(resume_text, job_description)
+                pdf_path = generate_pdf(improved_resume)
 
-if st.button("✨ Generate Tailored Resume") and resume_file and job_file:
-    try:
-        with st.spinner("Extracting your resume and job description..."):
-            resume_text = extract_text_from_pdf(resume_file)
-
-            if job_file.type == "application/pdf":
-                job_description = extract_text_from_pdf(job_file)
-            else:
-                job_description = job_file.read().decode("utf-8")
-
-        with st.spinner("Talking to ChatGPT..."):
-            improved_resume = chatgpt_refine_resume(resume_text, job_description)
-
-        st.success("✅ Resume tailored successfully!")
-        st.text_area("📋 Tailored Resume", improved_resume, height=400)
-
-        pdf_path = generate_pdf_from_text(improved_resume, "tailored_resume.pdf")
-        with open(pdf_path, "rb") as f:
-            st.download_button(
-                label="📥 Download as PDF",
-                data=f,
-                file_name="tailored_resume.pdf",
-                mime="application/pdf"
-            )
-
-    except Exception as e:
-        st.error(f"Something went wrong: {e}")
+            with open(pdf_path, "rb") as f:
+                st.success("Done! Download your tailored resume below.")
+                st.download_button(
+                    label="📥 Download Tailored Resume (PDF)",
+                    data=f,
+                    file_name="tailored_resume.pdf",
+                    mime="application/pdf"
+                )
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
