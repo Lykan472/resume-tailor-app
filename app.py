@@ -97,25 +97,104 @@ def convert_text_to_html(text):
 
 def generate_pdf(text):
     html_content = convert_text_to_html(text)
+
     full_html = f"""
     <html>
     <head>
-        <style>
-            body {{ font-family: Arial; font-size: 12pt; margin: 2cm; }}
-            h2 {{ border-bottom: 1px solid #ccc; margin-top: 20px; }}
-            li {{ margin-bottom: 6px; margin-left: 15px; }}
-            p {{ margin-bottom: 6px; }}
-        </style>
+      <style>
+        body {{
+          font-family: "Arial", sans-serif;
+          font-size: 10.5pt;
+          margin: 2cm;
+          color: #111;
+        }}
+
+        h1, h2 {{
+          color: #2c3e50;
+          margin-bottom: 6px;
+        }}
+
+        h1 {{
+          font-size: 20pt;
+          border-bottom: 2px solid #2c3e50;
+          padding-bottom: 5px;
+          margin-bottom: 15px;
+        }}
+
+        h2 {{
+          font-size: 14pt;
+          margin-top: 20px;
+          border-bottom: 1px solid #aaa;
+          padding-bottom: 3px;
+        }}
+
+        p {{
+          margin: 4px 0;
+          line-height: 1.4;
+        }}
+
+        ul {{
+          padding-left: 18px;
+          margin: 6px 0;
+        }}
+
+        li {{
+          margin-bottom: 4px;
+        }}
+
+        .section {{
+          margin-bottom: 18px;
+        }}
+
+        .label {{
+          font-weight: bold;
+        }}
+
+        .line {{
+          border-top: 1px solid #ccc;
+          margin: 15px 0;
+        }}
+
+        .header {{
+          text-align: center;
+          margin-bottom: 25px;
+        }}
+
+        .name {{
+          font-size: 18pt;
+          font-weight: bold;
+        }}
+
+        .contact {{
+          font-size: 10pt;
+          color: #555;
+        }}
+
+        .two-column {{
+          display: flex;
+          justify-content: space-between;
+        }}
+
+        .left, .right {{
+          width: 48%;
+        }}
+
+        .bullet-section {{
+          margin-top: 8px;
+        }}
+      </style>
     </head>
     <body>
         {html_content}
     </body>
     </html>
     """
+
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     with open(temp_file.name, "wb") as f:
         pisa.CreatePDF(full_html, dest=f)
     return temp_file.name
+
 
 
 
