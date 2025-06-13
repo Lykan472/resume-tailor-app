@@ -4,6 +4,7 @@ import os
 from PyPDF2 import PdfReader
 from fpdf import FPDF
 import tempfile
+import unicodedata
 
 # Set up OpenAI client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
@@ -59,31 +60,45 @@ Job Description:
     )
     return response.choices[0].message.content
 
-
-# Create PDF (default font)
-import unicodedata
-
+# Normalize unicode text for PDF
 def clean_text_for_pdf(text):
-    # Normalize and replace special characters with ASCII equivalents or remove them
     normalized = unicodedata.normalize("NFKD", text)
     ascii_text = normalized.encode("latin-1", errors="ignore").decode("latin-1")
     return ascii_text
 
+# Improved PDF formatting
+class PDF(FPDF):
+    def __init__(self):
+        super().__init__()
+        self.set_auto_page_break(auto=True, margin=10)
+        self.add_page()
+        self.set_font("Arial", size=11)
+        self.set_margins(15, 15, 15)
+
+    def add_resume_content(self, text):
+        lines = text.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                self.ln(5)  # Add vertical space between sections
+                continue
+            if line.endswith(":"):  # Treat as section heading
+                self.set_font("Arial", "B", 12)
+                self.cell(0, 8, line, ln=True)
+                self.set_font("Arial", "", 11)
+            elif line.startswith("-"):
+                self.cell(5)
+                self.multi_cell(0, 6, f"{line}")
+            else:
+                self.multi_cell(0, 6, line)
+
 def generate_pdf(text):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
-
     cleaned_text = clean_text_for_pdf(text)
-
-    for line in cleaned_text.split("\n"):
-        pdf.multi_cell(0, 10, line)
-
+    pdf = PDF()
+    pdf.add_resume_content(cleaned_text)
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
     pdf.output(temp_file.name)
     return temp_file.name
-
 
 # Streamlit UI
 st.title("🎯 Resume Tailor (ChatGPT-Powered)")
