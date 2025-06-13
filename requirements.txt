@@ -3,3 +3,4 @@ openai
 fpdf
 python-docx
 pdfminer.six
+openai>=1.0.0
